@@ -42,7 +42,7 @@ export interface FollowUpDraft {
   body: string;
 }
 
-const SYSTEM_PROMPT = `You are an executive assistant drafting a follow-up email on behalf of Joshua, the project lead at Aethel Labs.
+const SYSTEM_PROMPT = `You are an executive assistant drafting a follow-up email on behalf of the team at Aethel Labs.
 
 You write in clear, warm, professional English. You never use buzzwords or corporate jargon. You write the way a thoughtful senior colleague would write — direct, considerate, specific.
 
@@ -51,7 +51,7 @@ Output JSON ONLY, matching this exact shape:
 
 Rules for the output:
 - "subject": concise subject line, under 80 characters, no spam-trigger words
-- "body": full email body as plain text. Use \\n\\n between paragraphs. No Markdown, no bullet lists unless absolutely necessary. Sign off with "— Joshua".
+- "body": full email body as plain text. Use \\n\\n between paragraphs. No Markdown, no bullet lists unless absolutely necessary. Sign off with "— The Aethel Labs team".
 - Do NOT wrap the JSON in code fences. Do NOT add any text before or after the JSON object.`;
 
 const extractJson = (text: string): FollowUpDraft | null => {
@@ -89,7 +89,7 @@ export async function draftFollowUpEmail(input: FollowUpInput): Promise<FollowUp
   const userPrompt = `# Tone for this email
 ${TONE_GUIDANCE[tone]}
 
-# Admin notes (free text from Joshua about what this email should say)
+# Admin notes (free text from the Aethel Labs team about what this email should say)
 ${adminNotes.trim() || "(none)"}
 
 # Stakeholder

@@ -63,6 +63,6 @@ export const businessAnalystConfig: ConversationalAgent = {
     cta: "End Conversation",
     confirmText: "End this interview now? You won’t be able to add more messages.",
     thankYou:
-      "Thanks — your conversation is complete. Joshua will review it and may follow up.",
+      "Thanks — your conversation is complete. The Aethel Labs team will review it and may follow up.",
   },
 };
