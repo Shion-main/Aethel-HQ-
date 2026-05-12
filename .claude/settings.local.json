@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm --version)",
+      "PowerShell(pnpm *)",
+      "PowerShell(corepack *)",
+      "PowerShell(npm install *)",
+      "PowerShell(npx tsc --noEmit 2>&1 | Select-Object -First 50)",
+      "PowerShell(node -e \"console.log\\(require\\('crypto'\\).randomBytes\\(32\\).toString\\('hex'\\)\\)\")",
+      "PowerShell(npx tsc --noEmit 2>&1 | Select-Object -First 80)",
+      "PowerShell(npm *)",
+      "PowerShell(npx next lint --max-warnings 0 2>&1 | Select-Object -First 60)",
+      "PowerShell(npx next lint --max-warnings 0 2>&1 | Select-Object -First 50)",
+      "Bash(git check-ignore *)"
+    ]
+  }
+}
