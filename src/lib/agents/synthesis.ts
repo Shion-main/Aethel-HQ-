@@ -74,10 +74,11 @@ export async function runSynthesisForProject(
   });
 
   const { data: stored, error } = await db
-    .from(agent.synthesis.storageTable)
+    .from("documents")
     .insert({
       project_id: projectId,
       agent_id: agentId,
+      kind: agent.synthesis.documentKind,
       content: text,
       model: agent.model,
     })

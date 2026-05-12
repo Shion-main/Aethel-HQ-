@@ -54,7 +54,7 @@ export const businessAnalystConfig: AgentConfig = {
 
   synthesis: {
     kind: "brd",
-    storageTable: "brds",
+    documentKind: "brd",
     requireCompletedStakeholders: true,
   },
 

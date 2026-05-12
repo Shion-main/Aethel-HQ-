@@ -52,7 +52,7 @@ export interface AgentConfig {
 
   synthesis: {
     kind: "brd";
-    storageTable: "brds";
+    documentKind: string;
     requireCompletedStakeholders: boolean;
   };
 

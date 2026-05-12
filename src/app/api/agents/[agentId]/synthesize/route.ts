@@ -41,13 +41,14 @@ export async function POST(
     }
 
     const db = supabaseAdmin();
-    const { data: brd } = await db
-      .from(agent.synthesis.storageTable)
-      .select("id, content, created_at")
+    const { data: document } = await db
+      .from("documents")
+      .select("id, content, created_at, kind, title")
       .eq("id", result.outputId)
       .single();
 
-    return Response.json({ brd });
+    // brd alias kept for backward compatibility with existing BrdPanel client
+    return Response.json({ brd: document, document });
   } catch (err) {
     console.error("[synthesize] Groq error", err);
     return Response.json(

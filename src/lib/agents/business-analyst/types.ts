@@ -25,13 +25,19 @@ export type Message = {
   created_at: string;
 };
 
-export type Brd = {
+export type Document = {
   id: string;
   project_id: string;
+  agent_id: string;
+  kind: string;
+  title: string | null;
   content: string;
   model: string;
   created_at: string;
 };
+
+/** @deprecated Use Document. Kept for one cycle to ease imports. */
+export type Brd = Document;
 
 export const COMPLETION_TOKEN = "[[INTERVIEW_COMPLETE]]";
 

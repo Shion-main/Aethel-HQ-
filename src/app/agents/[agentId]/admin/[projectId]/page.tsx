@@ -6,9 +6,9 @@ import { nanoid } from "nanoid";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { getAgent } from "@/lib/agents/registry";
 import { CopyLink } from "@/components/copy-link";
-import { BrdPanel } from "@/components/brd-panel";
+import { DocumentPanel } from "@/components/document-panel";
 import { StatusBadge } from "@/components/status-badge";
-import type { Project, Stakeholder, Brd } from "@/lib/agents/business-analyst/types";
+import type { Project, Stakeholder, Document } from "@/lib/agents/business-analyst/types";
 import type { FollowUpStatus } from "@/lib/agents/types";
 
 type StakeholderWithIntake = Stakeholder & {
@@ -84,9 +84,10 @@ export default async function ProjectDetail({
   }
 
   const { data: latestBrd } = await db
-    .from("brds")
-    .select("id, content, created_at")
+    .from("documents")
+    .select("id, content, created_at, kind, title")
     .eq("project_id", params.projectId)
+    .eq("kind", "brd")
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -206,12 +207,17 @@ export default async function ProjectDetail({
         )}
       </section>
 
-      <BrdPanel
-        agentId={agent.id}
+      <DocumentPanel
+        documentLabel="Business Requirements Document"
+        endpointPath={`/api/agents/${agent.id}/synthesize`}
         projectId={p.id}
-        initialBrd={(latestBrd as Brd | null) || null}
+        initialDocument={(latestBrd as Document | null) || null}
         canGenerate={completedCount > 0}
-        completedCount={completedCount}
+        enabledHelperText={`${completedCount} completed conversation${completedCount === 1 ? "" : "s"} available.`}
+        disabledHelperText="Unlocks after the first stakeholder ends their conversation."
+        ctaGenerate="Generate BRD"
+        ctaRegenerate="Regenerate"
+        generatingHelperText="Reading transcripts and writing the BRD. This usually takes 10–30 seconds."
       />
     </div>
   );

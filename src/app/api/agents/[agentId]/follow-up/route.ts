@@ -71,9 +71,10 @@ export async function POST(
   const project = Array.isArray(projectsField) ? projectsField[0] : projectsField;
 
   const { data: latestBrd } = await db
-    .from(agent.synthesis.storageTable)
+    .from("documents")
     .select("content")
     .eq("project_id", stakeholder.project_id)
+    .eq("kind", agent.synthesis.documentKind)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();

@@ -85,20 +85,21 @@ export default async function AdminHome({
 
   // Batch-fetch derived status info
   const projectIds = (projects || []).map((p) => p.id);
-  const [{ data: stakeholders }, { data: brds }] = projectIds.length
+  const [{ data: stakeholders }, { data: docs }] = projectIds.length
     ? await Promise.all([
         db
           .from("stakeholders")
           .select("project_id, intake_completed_at, status")
           .in("project_id", projectIds),
         db
-          .from("brds")
+          .from("documents")
           .select("project_id")
+          .eq("kind", "brd")
           .in("project_id", projectIds),
       ])
     : [{ data: [] }, { data: [] }];
 
-  const brdSet = new Set((brds || []).map((b) => b.project_id));
+  const brdSet = new Set((docs || []).map((b) => b.project_id));
   const statusByProject: Record<string, ProjectStatus> = {};
   for (const id of projectIds) {
     const stk = (stakeholders || []).filter((s) => s.project_id === id);
