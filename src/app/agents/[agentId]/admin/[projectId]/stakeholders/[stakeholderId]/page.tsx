@@ -9,6 +9,7 @@ import {
 } from "@/lib/agents/business-analyst/types";
 import { parseSuggestions } from "@/lib/agents/business-analyst/parse-suggestions";
 import { StatusBadge } from "@/components/status-badge";
+import { FollowUpComposer } from "@/components/follow-up-composer";
 import type { FollowUpStatus } from "@/lib/agents/types";
 
 type StakeholderWithIntake = Stakeholder & {
@@ -93,6 +94,12 @@ export default async function TranscriptPage({
           />
         </div>
       </div>
+
+      <FollowUpComposer
+        agentId={agent.id}
+        stakeholderId={s.id}
+        stakeholderEmail={email}
+      />
 
       <div className="space-y-3">
         {!messages?.length ? (
