@@ -7,7 +7,17 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 import { getAgent } from "@/lib/agents/registry";
 import { CopyLink } from "@/components/copy-link";
 import { BrdPanel } from "@/components/brd-panel";
+import { StatusBadge } from "@/components/status-badge";
 import type { Project, Stakeholder, Brd } from "@/lib/agents/business-analyst/types";
+import type { FollowUpStatus } from "@/lib/agents/types";
+
+type StakeholderWithIntake = Stakeholder & {
+  email: string | null;
+  company: string | null;
+  intake_data: Record<string, string> | null;
+  follow_up_status: FollowUpStatus;
+  intake_completed_at: string | null;
+};
 
 async function addStakeholder(formData: FormData) {
   "use server";
@@ -140,30 +150,50 @@ export default async function ProjectDetail({
           <p className="text-sm text-zinc-500">No stakeholders yet.</p>
         ) : (
           <ul className="border rounded-lg divide-y dark:border-zinc-800 dark:divide-zinc-800 bg-white dark:bg-zinc-900">
-            {(stakeholders as Stakeholder[]).map((s) => {
+            {(stakeholders as StakeholderWithIntake[]).map((s) => {
               const url = `${baseUrl}/agents/${agent.id}/interview/${s.token}`;
               const msgCount = counts[s.id] || 0;
+              const intake = s.intake_data || {};
+              const displayName = intake.name || s.name;
+              const displayRole = intake.role || s.role;
+              const company = s.company || intake.company || null;
+              const email = s.email || intake.email || null;
               return (
                 <li key={s.id} className="p-4 space-y-2">
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-start justify-between gap-3">
                     <Link
                       href={`/agents/${agent.id}/admin/${p.id}/stakeholders/${s.id}`}
                       className="flex-1 hover:opacity-80"
                     >
                       <div className="font-medium">
-                        {s.name}
-                        {s.role && (
-                          <span className="text-zinc-500 font-normal"> · {s.role}</span>
+                        {displayName}
+                        {displayRole && (
+                          <span className="text-zinc-500 font-normal"> · {displayRole}</span>
                         )}
                       </div>
-                      <div className="text-xs text-zinc-500 mt-0.5">
-                        {msgCount} message{msgCount === 1 ? "" : "s"}
-                        {msgCount > 0 && " · view transcript"}
+                      {(company || email) && (
+                        <div className="text-xs text-zinc-500 mt-0.5 flex flex-wrap gap-x-2">
+                          {company && <span>{company}</span>}
+                          {company && email && <span className="text-zinc-300 dark:text-zinc-700">·</span>}
+                          {email && <span>{email}</span>}
+                        </div>
+                      )}
+                      <div className="text-xs text-zinc-500 mt-0.5 flex items-center gap-2">
+                        <span className={`px-1.5 py-0.5 rounded ${STATUS_BADGE[s.status]}`}>
+                          {s.status.replace("_", " ")}
+                        </span>
+                        <span>·</span>
+                        <span>
+                          {msgCount} message{msgCount === 1 ? "" : "s"}
+                          {msgCount > 0 && " · view transcript"}
+                        </span>
                       </div>
                     </Link>
-                    <span className={`text-xs px-2 py-0.5 rounded ${STATUS_BADGE[s.status]}`}>
-                      {s.status.replace("_", " ")}
-                    </span>
+                    <StatusBadge
+                      agentId={agent.id}
+                      stakeholderId={s.id}
+                      status={s.follow_up_status || "new"}
+                    />
                   </div>
                   <div className="flex items-center text-xs text-zinc-500 font-mono bg-zinc-50 dark:bg-zinc-950 border dark:border-zinc-800 rounded px-2 py-1">
                     <span className="truncate flex-1">{url}</span>

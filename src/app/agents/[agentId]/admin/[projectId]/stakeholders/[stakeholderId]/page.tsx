@@ -8,6 +8,16 @@ import {
   type Stakeholder,
 } from "@/lib/agents/business-analyst/types";
 import { parseSuggestions } from "@/lib/agents/business-analyst/parse-suggestions";
+import { StatusBadge } from "@/components/status-badge";
+import type { FollowUpStatus } from "@/lib/agents/types";
+
+type StakeholderWithIntake = Stakeholder & {
+  email: string | null;
+  company: string | null;
+  intake_data: Record<string, string> | null;
+  follow_up_status: FollowUpStatus;
+  conversation_ended_at: string | null;
+};
 
 export default async function TranscriptPage({
   params,
@@ -35,7 +45,12 @@ export default async function TranscriptPage({
     .in("role", ["user", "assistant"])
     .order("created_at", { ascending: true });
 
-  const s = stakeholder as Stakeholder;
+  const s = stakeholder as StakeholderWithIntake;
+  const intake = s.intake_data || {};
+  const displayName = intake.name || s.name;
+  const displayRole = intake.role || s.role;
+  const company = s.company || intake.company || null;
+  const email = s.email || intake.email || null;
 
   return (
     <div className="space-y-6">
@@ -46,15 +61,36 @@ export default async function TranscriptPage({
         >
           ← Back to project
         </Link>
-        <h1 className="text-2xl font-semibold mt-2">
-          {s.name}
-          {s.role && <span className="text-zinc-500 font-normal"> · {s.role}</span>}
-        </h1>
-        <div className="text-xs text-zinc-500 mt-1">
-          Status: <span className="font-medium">{s.status.replace("_", " ")}</span>
-          {s.completed_at && (
-            <> · completed {new Date(s.completed_at).toLocaleString()}</>
-          )}
+        <div className="flex items-start justify-between gap-3 mt-2">
+          <div>
+            <h1 className="text-2xl font-semibold">
+              {displayName}
+              {displayRole && (
+                <span className="text-zinc-500 font-normal"> · {displayRole}</span>
+              )}
+            </h1>
+            {(company || email) && (
+              <div className="text-sm text-zinc-500 mt-1 flex flex-wrap gap-x-3">
+                {company && <span>{company}</span>}
+                {email && (
+                  <a href={`mailto:${email}`} className="hover:text-zinc-900 dark:hover:text-zinc-100">
+                    {email}
+                  </a>
+                )}
+              </div>
+            )}
+            <div className="text-xs text-zinc-500 mt-2">
+              Conversation: <span className="font-medium">{s.status.replace("_", " ")}</span>
+              {s.conversation_ended_at && (
+                <> · ended {new Date(s.conversation_ended_at).toLocaleString()}</>
+              )}
+            </div>
+          </div>
+          <StatusBadge
+            agentId={agent.id}
+            stakeholderId={s.id}
+            status={s.follow_up_status || "new"}
+          />
         </div>
       </div>
 
@@ -83,7 +119,7 @@ export default async function TranscriptPage({
                   }`}
                 >
                   <div className="text-[10px] uppercase tracking-wide opacity-60 mb-1">
-                    {isUser ? s.name : "Interviewer"}
+                    {isUser ? displayName : "Interviewer"}
                   </div>
                   {content}
                 </div>
