@@ -6,6 +6,7 @@ import {
   type Message,
   type Stakeholder,
 } from "@/lib/agents/business-analyst/types";
+import { parseSuggestions } from "@/lib/agents/business-analyst/parse-suggestions";
 
 export default async function TranscriptPage({
   params,
@@ -57,7 +58,11 @@ export default async function TranscriptPage({
           <p className="text-sm text-zinc-500">No messages yet.</p>
         ) : (
           (messages as Message[]).map((m) => {
-            const content = stripCompletionToken(m.content);
+            const stripped = stripCompletionToken(m.content);
+            const content =
+              m.role === "assistant"
+                ? parseSuggestions(stripped).cleanText || stripped
+                : stripped;
             if (!content) return null;
             const isUser = m.role === "user";
             return (

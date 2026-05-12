@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { SYNTHESIZER_SYSTEM_PROMPT } from "@/lib/agents/business-analyst/prompts";
 import { stripCompletionToken } from "@/lib/agents/business-analyst/types";
+import { parseSuggestions } from "@/lib/agents/business-analyst/parse-suggestions";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -63,7 +64,10 @@ export async function POST(req: Request) {
         .filter((m) => m.stakeholder_id === s.id)
         .map((m) => {
           const speaker = m.role === "user" ? s.name : "Interviewer";
-          return `${speaker}: ${stripCompletionToken(m.content)}`;
+          const stripped = stripCompletionToken(m.content);
+          const clean =
+            m.role === "assistant" ? parseSuggestions(stripped).cleanText || stripped : stripped;
+          return `${speaker}: ${clean}`;
         })
         .join("\n\n");
       return `## Stakeholder: ${s.name}${s.role ? ` (${s.role})` : ""}\n\n${turns}`;
