@@ -1,7 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useFormState, useFormStatus } from "react-dom";
 import type { IntakeField } from "@/lib/agents/types";
+import {
+  submitIntakeAction,
+  type IntakeActionState,
+} from "@/lib/agents/intake-action";
 
 type Props = {
   agentId: string;
@@ -11,7 +16,23 @@ type Props = {
   projectName: string;
 };
 
+const initialState: IntakeActionState = { error: null };
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="w-full bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900 rounded-md py-2.5 font-medium disabled:opacity-50"
+    >
+      {pending ? "Saving…" : "Start the conversation"}
+    </button>
+  );
+}
+
 export function IntakeForm({ agentId, token, fields, defaults, projectName }: Props) {
+  const [state, formAction] = useFormState(submitIntakeAction, initialState);
   const [values, setValues] = useState<Record<string, string>>(() => {
     const seed: Record<string, string> = {};
     fields.forEach((f) => {
@@ -19,49 +40,6 @@ export function IntakeForm({ agentId, token, fields, defaults, projectName }: Pr
     });
     return seed;
   });
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    for (const f of fields) {
-      if (f.required && !values[f.key]?.trim()) {
-        setError(`${f.label} is required.`);
-        return;
-      }
-      if (f.type === "email" && values[f.key]) {
-        const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values[f.key]);
-        if (!ok) {
-          setError(`${f.label} doesn't look like a valid email.`);
-          return;
-        }
-      }
-    }
-
-    setSubmitting(true);
-    try {
-      const res = await fetch(`/api/agents/${agentId}/intake`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, values }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data?.error || "Couldn't save your details. Please try again.");
-        setSubmitting(false);
-        return;
-      }
-      // Full reload so the server component re-renders with intake_completed_at
-      // set, unmounts this form, and mounts the chat. router.refresh() was
-      // flaky here — the form stayed mounted with submitting=true.
-      window.location.reload();
-    } catch {
-      setError("Network error. Please try again.");
-      setSubmitting(false);
-    }
-  };
 
   return (
     <main className="min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950">
@@ -79,7 +57,10 @@ export function IntakeForm({ agentId, token, fields, defaults, projectName }: Pr
             takes about 30 seconds.
           </p>
 
-          <form onSubmit={onSubmit} className="space-y-4">
+          <form action={formAction} className="space-y-4">
+            <input type="hidden" name="__agentId" value={agentId} />
+            <input type="hidden" name="__token" value={token} />
+
             {fields.map((f) => (
               <div key={f.key} className="space-y-1">
                 <label htmlFor={`intake-${f.key}`} className="block text-sm font-medium">
@@ -121,19 +102,13 @@ export function IntakeForm({ agentId, token, fields, defaults, projectName }: Pr
               </div>
             ))}
 
-            {error && (
+            {state?.error && (
               <div className="text-sm text-red-600 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-900 rounded-md px-4 py-2">
-                {error}
+                {state.error}
               </div>
             )}
 
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900 rounded-md py-2.5 font-medium disabled:opacity-50"
-            >
-              {submitting ? "Saving…" : "Start the conversation"}
-            </button>
+            <SubmitButton />
           </form>
         </div>
       </div>
