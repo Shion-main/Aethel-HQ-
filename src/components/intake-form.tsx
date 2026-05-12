@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import type { IntakeField } from "@/lib/agents/types";
 
 type Props = {
@@ -13,7 +12,6 @@ type Props = {
 };
 
 export function IntakeForm({ agentId, token, fields, defaults, projectName }: Props) {
-  const router = useRouter();
   const [values, setValues] = useState<Record<string, string>>(() => {
     const seed: Record<string, string> = {};
     fields.forEach((f) => {
@@ -55,7 +53,10 @@ export function IntakeForm({ agentId, token, fields, defaults, projectName }: Pr
         setSubmitting(false);
         return;
       }
-      router.refresh();
+      // Full reload so the server component re-renders with intake_completed_at
+      // set, unmounts this form, and mounts the chat. router.refresh() was
+      // flaky here — the form stayed mounted with submitting=true.
+      window.location.reload();
     } catch {
       setError("Network error. Please try again.");
       setSubmitting(false);
