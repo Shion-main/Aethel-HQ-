@@ -2,10 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useChat, type Message } from "ai/react";
-import {
-  stripCompletionToken,
-  COMPLETION_TOKEN,
-} from "@/lib/agents/business-analyst/types";
+import { stripCompletionToken } from "@/lib/agents/business-analyst/types";
 import {
   parseSuggestions,
   composeUserMessage,
@@ -20,6 +17,7 @@ type Props = {
   projectName: string;
   isCompleted: boolean;
   initialMessages: Message[];
+  endConversation: { cta: string; confirmText: string; thankYou: string };
 };
 
 export function InterviewChat({
@@ -29,6 +27,7 @@ export function InterviewChat({
   projectName,
   isCompleted,
   initialMessages,
+  endConversation,
 }: Props) {
   const { messages, input, setInput, append, isLoading, error } = useChat({
     api: `/api/agents/${agentId}/chat`,
@@ -37,6 +36,9 @@ export function InterviewChat({
   });
 
   const [selectedChips, setSelectedChips] = useState<string[]>([]);
+  const [locallyEnded, setLocallyEnded] = useState(false);
+  const [ending, setEnding] = useState(false);
+  const [endError, setEndError] = useState<string | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -46,11 +48,7 @@ export function InterviewChat({
     });
   }, [messages, isLoading]);
 
-  const completedNow =
-    isCompleted ||
-    messages.some(
-      (m) => m.role === "assistant" && m.content.includes(COMPLETION_TOKEN)
-    );
+  const completedNow = isCompleted || locallyEnded;
 
   const lastAssistantId = [...messages]
     .reverse()
@@ -72,18 +70,54 @@ export function InterviewChat({
     await append({ role: "user", content: composed });
   };
 
+  const endConversationNow = async () => {
+    if (ending) return;
+    if (!window.confirm(endConversation.confirmText)) return;
+    setEnding(true);
+    setEndError(null);
+    try {
+      const res = await fetch(`/api/agents/${agentId}/end`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setEndError(data?.error || "Couldn't end the conversation. Please try again.");
+        setEnding(false);
+        return;
+      }
+      setLocallyEnded(true);
+    } catch {
+      setEndError("Network error. Please try again.");
+      setEnding(false);
+    }
+  };
+
   const canSend =
     !isLoading && (selectedChips.length > 0 || input.trim().length > 0);
 
   return (
     <main className="min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950">
       <header className="border-b dark:border-zinc-800 bg-white dark:bg-zinc-950">
-        <div className="max-w-3xl mx-auto px-6 py-4">
-          <div className="text-xs text-zinc-500">Stakeholder interview</div>
-          <h1 className="text-lg font-semibold">
-            {projectName}{" "}
-            <span className="text-zinc-500 font-normal">· {stakeholderName}</span>
-          </h1>
+        <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
+          <div>
+            <div className="text-xs text-zinc-500">Stakeholder interview</div>
+            <h1 className="text-lg font-semibold">
+              {projectName}{" "}
+              <span className="text-zinc-500 font-normal">· {stakeholderName}</span>
+            </h1>
+          </div>
+          {!completedNow && messages.length > 0 && (
+            <button
+              type="button"
+              onClick={endConversationNow}
+              disabled={ending || isLoading}
+              className="text-xs border rounded-md px-3 py-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 dark:border-zinc-800 disabled:opacity-50"
+            >
+              {ending ? "Ending…" : endConversation.cta}
+            </button>
+          )}
         </div>
       </header>
 
@@ -166,9 +200,14 @@ export function InterviewChat({
               Something went wrong. Try sending your last message again.
             </div>
           )}
+          {endError && (
+            <div className="text-sm text-red-600 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-900 rounded-md px-4 py-2">
+              {endError}
+            </div>
+          )}
           {completedNow && (
             <div className="text-sm text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-900 rounded-md px-4 py-3 text-center">
-              Thanks — your interview is complete. You can close this tab.
+              {endConversation.thankYou}
             </div>
           )}
         </div>

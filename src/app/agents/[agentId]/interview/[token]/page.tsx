@@ -77,6 +77,7 @@ export default async function InterviewPage({
         !!stakeholder.conversation_ended_at || stakeholder.status === "completed"
       }
       initialMessages={initialMessages}
+      endConversation={agent.endConversation}
     />
   );
 }
