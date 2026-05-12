@@ -145,7 +145,7 @@ Stakeholder role: {{STAKEHOLDER_ROLE}}
 
 # Begin
 
-Start with a warm, simple greeting that uses their first name. Briefly explain that you'll be asking a few questions to understand what they need, that it should take 20-30 minutes, and that there are no wrong answers. Then ask your first question — something about them or how they currently do things. Keep your first message under 100 words. Do NOT offer options on the first message.
+Start with a warm, simple greeting that uses their first name. Briefly explain that you'll be asking a few questions to understand what they need, that it should take 20–30 minutes, and that there are no wrong answers. Mention that whenever they feel they've shared everything they want to, they can click the "End Conversation" button at the top of the page — but there's no rush, and they're welcome to keep going as long as they like. Then ask your first question — something about them or how they currently do things. Keep your first message under 130 words. Do NOT offer options on the first message.
 `.trim();
 
 export const SYNTHESIZER_SYSTEM_PROMPT = `

@@ -1,5 +1,7 @@
 "use server";
 
+import { groq } from "@ai-sdk/groq";
+import { generateText } from "ai";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabase/server";
@@ -37,7 +39,9 @@ export async function submitIntakeAction(
 
   const { data: stakeholder, error: stErr } = await db
     .from("stakeholders")
-    .select("id, conversation_ended_at")
+    .select(
+      "id, project_id, conversation_ended_at, projects(name, context)"
+    )
     .eq("token", token)
     .eq("agent_id", agent.id)
     .single();
@@ -65,6 +69,56 @@ export async function submitIntakeAction(
 
   if (upErr) {
     return { error: upErr.message };
+  }
+
+  // Pre-generate the agent's greeting so the stakeholder lands on a populated
+  // chat. Non-fatal: if Groq errors, intake still succeeds and the chat will
+  // start empty (stakeholder can type "hi" to kick the model off).
+  try {
+    // Only generate if no assistant message exists yet (idempotent on resubmits)
+    const { data: existing } = await db
+      .from("messages")
+      .select("id")
+      .eq("stakeholder_id", stakeholder.id)
+      .eq("role", "assistant")
+      .limit(1);
+
+    if (!existing?.length) {
+      const projectsField = stakeholder.projects as
+        | { name: string; context: string | null }
+        | { name: string; context: string | null }[]
+        | null;
+      const project = Array.isArray(projectsField)
+        ? projectsField[0]
+        : projectsField;
+
+      const systemPrompt = agent.buildInterviewerSystemPrompt({
+        projectContext: project?.context || "",
+        intake: clean,
+        stakeholder: {
+          id: stakeholder.id,
+          name: clean.name,
+          role: clean.role,
+        },
+      });
+
+      const { text: greeting } = await generateText({
+        model: groq(agent.model),
+        system: systemPrompt,
+        prompt: "Begin the conversation now with your opening greeting.",
+        temperature: 0.7,
+      });
+
+      if (greeting?.trim()) {
+        await db.from("messages").insert({
+          stakeholder_id: stakeholder.id,
+          role: "assistant",
+          content: greeting,
+        });
+      }
+    }
+  } catch (err) {
+    console.error("[intake] greeting pre-generation failed (non-fatal)", err);
   }
 
   const path = `/agents/${agent.id}/interview/${token}`;

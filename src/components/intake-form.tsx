@@ -26,7 +26,7 @@ function SubmitButton() {
       disabled={pending}
       className="w-full bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900 rounded-md py-2.5 font-medium disabled:opacity-50"
     >
-      {pending ? "Saving…" : "Start the conversation"}
+      {pending ? "Starting your conversation…" : "Start the conversation"}
     </button>
   );
 }
