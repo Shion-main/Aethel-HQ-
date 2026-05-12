@@ -23,7 +23,7 @@ export default function AdminLayout({
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <header className="border-b dark:border-zinc-800 bg-white dark:bg-zinc-950">
+      <header className="sticky top-0 z-20 border-b dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/90 backdrop-blur">
         <div className="max-w-5xl mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/" className="text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">

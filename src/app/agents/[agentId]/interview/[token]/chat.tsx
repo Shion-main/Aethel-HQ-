@@ -98,8 +98,8 @@ export function InterviewChat({
     !isLoading && (selectedChips.length > 0 || input.trim().length > 0);
 
   return (
-    <main className="min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950">
-      <header className="border-b dark:border-zinc-800 bg-white dark:bg-zinc-950">
+    <main className="h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950">
+      <header className="shrink-0 border-b dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/90 backdrop-blur">
         <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
           <div>
             <div className="text-xs text-zinc-500">Stakeholder interview</div>
