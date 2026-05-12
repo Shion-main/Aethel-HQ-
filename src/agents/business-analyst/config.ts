@@ -1,4 +1,4 @@
-import type { AgentConfig } from "@/lib/agents/types";
+import type { ConversationalAgent } from "@/lib/agents/types";
 import {
   buildInterviewerPrompt,
   SYNTHESIZER_SYSTEM_PROMPT,
@@ -6,10 +6,11 @@ import {
 import { stripCompletionToken } from "@/lib/agents/business-analyst/types";
 import { parseSuggestions } from "@/lib/agents/business-analyst/parse-suggestions";
 
-export const businessAnalystConfig: AgentConfig = {
+export const businessAnalystConfig: ConversationalAgent = {
   id: "business-analyst",
   name: "Business Analyst",
   shortDescription: "Stakeholder interviews → BRD drafts",
+  kind: "conversational",
 
   model: "llama-3.3-70b-versatile",
 

@@ -1,7 +1,7 @@
 import { groq } from "@ai-sdk/groq";
 import { streamText, type CoreMessage } from "ai";
 import { supabaseAdmin } from "@/lib/supabase/server";
-import { getAgent } from "@/lib/agents/registry";
+import { getConversationalAgent } from "@/lib/agents/registry";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -12,7 +12,7 @@ export async function POST(
   req: Request,
   { params }: { params: { agentId: string } }
 ) {
-  const agent = getAgent(params.agentId);
+  const agent = getConversationalAgent(params.agentId);
   if (!agent) {
     return Response.json({ error: "Unknown agent" }, { status: 404 });
   }

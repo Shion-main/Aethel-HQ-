@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { nanoid } from "nanoid";
 import { supabaseAdmin } from "@/lib/supabase/server";
-import { getAgent } from "@/lib/agents/registry";
+import { getConversationalAgent } from "@/lib/agents/registry";
 
 type ProjectStatus =
   | "intake_pending"
@@ -33,7 +33,7 @@ const STATUS_META: Record<ProjectStatus, { label: string; classes: string }> = {
 async function inviteStakeholder(formData: FormData) {
   "use server";
   const agentId = String(formData.get("agentId") || "");
-  if (!agentId || !getAgent(agentId)) throw new Error("Unknown agent");
+  if (!agentId || !getConversationalAgent(agentId)) throw new Error("Unknown agent");
 
   const db = supabaseAdmin();
   const now = new Date();
@@ -72,7 +72,7 @@ export default async function AdminHome({
 }: {
   params: { agentId: string };
 }) {
-  const agent = getAgent(params.agentId);
+  const agent = getConversationalAgent(params.agentId);
   if (!agent) notFound();
 
   const db = supabaseAdmin();

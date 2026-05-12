@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabase/server";
-import { getAgent } from "@/lib/agents/registry";
+import { getConversationalAgent } from "@/lib/agents/registry";
 import {
   stripCompletionToken,
   type Message,
@@ -25,7 +25,7 @@ export default async function TranscriptPage({
 }: {
   params: { agentId: string; projectId: string; stakeholderId: string };
 }) {
-  const agent = getAgent(params.agentId);
+  const agent = getConversationalAgent(params.agentId);
   if (!agent) notFound();
 
   const db = supabaseAdmin();

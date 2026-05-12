@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { requireAdmin, clearAdminCookie } from "@/lib/auth";
-import { getAgent } from "@/lib/agents/registry";
+import { getConversationalAgent } from "@/lib/agents/registry";
 
 export default function AdminLayout({
   children,
@@ -12,7 +12,7 @@ export default function AdminLayout({
 }) {
   requireAdmin();
 
-  const agent = getAgent(params.agentId);
+  const agent = getConversationalAgent(params.agentId);
   if (!agent) notFound();
 
   async function logout() {

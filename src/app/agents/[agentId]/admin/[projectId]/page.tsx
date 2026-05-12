@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { nanoid } from "nanoid";
 import { supabaseAdmin } from "@/lib/supabase/server";
-import { getAgent } from "@/lib/agents/registry";
+import { getConversationalAgent, listAgents } from "@/lib/agents/registry";
+import { isGenerative, type GenerativeAgent } from "@/lib/agents/types";
 import { CopyLink } from "@/components/copy-link";
 import { DocumentPanel } from "@/components/document-panel";
 import { StatusBadge } from "@/components/status-badge";
@@ -25,7 +26,7 @@ async function addStakeholder(formData: FormData) {
   const projectId = String(formData.get("projectId") || "");
   const name = String(formData.get("name") || "").trim();
   const role = String(formData.get("role") || "").trim();
-  if (!agentId || !getAgent(agentId)) throw new Error("Unknown agent");
+  if (!agentId || !getConversationalAgent(agentId)) throw new Error("Unknown agent");
   if (!projectId) return;
   const db = supabaseAdmin();
   const { error } = await db.from("stakeholders").insert({
@@ -51,7 +52,7 @@ export default async function ProjectDetail({
 }: {
   params: { agentId: string; projectId: string };
 }) {
-  const agent = getAgent(params.agentId);
+  const agent = getConversationalAgent(params.agentId);
   if (!agent) notFound();
 
   const db = supabaseAdmin();
@@ -83,14 +84,26 @@ export default async function ProjectDetail({
     });
   }
 
-  const { data: latestBrd } = await db
+  const { data: allDocs } = await db
     .from("documents")
     .select("id, content, created_at, kind, title")
     .eq("project_id", params.projectId)
-    .eq("kind", "brd")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .order("created_at", { ascending: false });
+
+  const docsByKind: Record<string, Document[]> = {};
+  (allDocs || []).forEach((d) => {
+    const doc = d as unknown as Document;
+    if (!docsByKind[doc.kind]) docsByKind[doc.kind] = [];
+    docsByKind[doc.kind].push(doc);
+  });
+
+  const latestBrd = docsByKind["brd"]?.[0] ?? null;
+  const documentsByKindCount: Record<string, number> = {};
+  Object.entries(docsByKind).forEach(([k, v]) => {
+    documentsByKindCount[k] = v.length;
+  });
+
+  const generativeAgents = listAgents("generative").filter(isGenerative);
 
   const completedCount =
     (stakeholders as Stakeholder[] | null)?.filter((s) => s.status === "completed").length ||
@@ -219,6 +232,32 @@ export default async function ProjectDetail({
         ctaRegenerate="Regenerate"
         generatingHelperText="Reading transcripts and writing the BRD. This usually takes 10–30 seconds."
       />
+
+      {generativeAgents.map((ga: GenerativeAgent) => {
+        const projectState = {
+          hasBrd: !!latestBrd,
+          documentsByKind: documentsByKindCount,
+          completedStakeholderCount: completedCount,
+        };
+        const runnable = ga.canRunFor(projectState);
+        const canGenerate = runnable === true;
+        const initial = docsByKind[ga.document.kind]?.[0] ?? null;
+        return (
+          <DocumentPanel
+            key={ga.id}
+            documentLabel={ga.document.title}
+            endpointPath={`/api/agents/${ga.id}/generate`}
+            projectId={p.id}
+            initialDocument={initial}
+            canGenerate={canGenerate}
+            enabledHelperText={ga.cta.enabledHelperText}
+            disabledHelperText={canGenerate ? "" : (runnable as string)}
+            ctaGenerate={ga.cta.generate}
+            ctaRegenerate={ga.cta.regenerate}
+            generatingHelperText={ga.cta.generatingText}
+          />
+        );
+      })}
     </div>
   );
 }

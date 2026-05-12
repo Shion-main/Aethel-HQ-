@@ -1,7 +1,7 @@
 import { groq } from "@ai-sdk/groq";
 import { generateText } from "ai";
 import { supabaseAdmin } from "@/lib/supabase/server";
-import { requireAgent } from "./registry";
+import { getConversationalAgent } from "./registry";
 import type { SynthesisContext, SynthesisStakeholder } from "./types";
 
 export type SynthesisResult =
@@ -12,7 +12,10 @@ export async function runSynthesisForProject(
   agentId: string,
   projectId: string
 ): Promise<SynthesisResult> {
-  const agent = requireAgent(agentId);
+  const agent = getConversationalAgent(agentId);
+  if (!agent) {
+    return { ok: false, reason: "agent_not_conversational_or_missing" };
+  }
   const db = supabaseAdmin();
 
   const { data: project } = await db

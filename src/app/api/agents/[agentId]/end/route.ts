@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase/server";
-import { getAgent } from "@/lib/agents/registry";
+import { getConversationalAgent } from "@/lib/agents/registry";
 import { runSynthesisForProject } from "@/lib/agents/synthesis";
 import { extractProjectMetadata } from "@/lib/agents/project-extractor";
 
@@ -12,7 +12,7 @@ export async function POST(
   req: Request,
   { params }: { params: { agentId: string } }
 ) {
-  const agent = getAgent(params.agentId);
+  const agent = getConversationalAgent(params.agentId);
   if (!agent) {
     return Response.json({ error: "Unknown agent" }, { status: 404 });
   }

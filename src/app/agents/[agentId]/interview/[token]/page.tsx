@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabase/server";
-import { getAgent } from "@/lib/agents/registry";
+import { getConversationalAgent } from "@/lib/agents/registry";
 import { stripCompletionToken } from "@/lib/agents/business-analyst/types";
 import { IntakeForm } from "@/components/intake-form";
 import { InterviewChat } from "./chat";
@@ -12,7 +12,7 @@ export default async function InterviewPage({
 }: {
   params: { agentId: string; token: string };
 }) {
-  const agent = getAgent(params.agentId);
+  const agent = getConversationalAgent(params.agentId);
   if (!agent) notFound();
 
   const db = supabaseAdmin();

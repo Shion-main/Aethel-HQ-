@@ -1,6 +1,6 @@
 import { requireAdmin } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
-import { getAgent } from "@/lib/agents/registry";
+import { getConversationalAgent } from "@/lib/agents/registry";
 import type { FollowUpStatus } from "@/lib/agents/types";
 
 export const runtime = "nodejs";
@@ -19,7 +19,7 @@ export async function PATCH(
 ) {
   requireAdmin();
 
-  const agent = getAgent(params.agentId);
+  const agent = getConversationalAgent(params.agentId);
   if (!agent) {
     return Response.json({ error: "Unknown agent" }, { status: 404 });
   }

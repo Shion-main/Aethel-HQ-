@@ -2,7 +2,7 @@ import Link from "next/link";
 import { listAgents } from "@/lib/agents/registry";
 
 export default function Home() {
-  const agents = listAgents();
+  const agents = listAgents("conversational");
   return (
     <main className="min-h-screen flex items-center justify-center p-8 bg-zinc-50 dark:bg-zinc-950">
       <div className="max-w-xl w-full space-y-6">
