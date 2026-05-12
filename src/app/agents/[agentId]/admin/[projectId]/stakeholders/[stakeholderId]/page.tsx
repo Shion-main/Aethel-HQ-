@@ -11,6 +11,7 @@ import { parseSuggestions } from "@/lib/agents/business-analyst/parse-suggestion
 import { StatusBadge } from "@/components/status-badge";
 import { FollowUpComposer } from "@/components/follow-up-composer";
 import type { FollowUpStatus } from "@/lib/agents/types";
+import { formatPHDateTime } from "@/lib/format-date";
 
 type StakeholderWithIntake = Stakeholder & {
   email: string | null;
@@ -83,7 +84,7 @@ export default async function TranscriptPage({
             <div className="text-xs text-zinc-500 mt-2">
               Conversation: <span className="font-medium">{s.status.replace("_", " ")}</span>
               {s.conversation_ended_at && (
-                <> · ended {new Date(s.conversation_ended_at).toLocaleString()}</>
+                <> · ended {formatPHDateTime(s.conversation_ended_at)}</>
               )}
             </div>
           </div>

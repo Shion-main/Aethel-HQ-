@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
+import { formatPHDateTime } from "@/lib/format-date";
 
 export type DocumentRecord = {
   id: string;
@@ -263,9 +264,9 @@ export function DocumentPanel({
         <article className="border rounded-lg p-6 bg-white dark:bg-zinc-900 dark:border-zinc-800 prose prose-sm dark:prose-invert max-w-none prose-headings:font-semibold prose-table:text-sm">
           <ReactMarkdown>{displayContent(doc)}</ReactMarkdown>
           <p className="text-xs text-zinc-400 mt-6 not-prose">
-            Generated {new Date(doc.created_at).toLocaleString()}
+            Generated {formatPHDateTime(doc.created_at)}
             {doc.human_edited && doc.edited_at && (
-              <> · Edited {new Date(doc.edited_at).toLocaleString()}</>
+              <> · Edited {formatPHDateTime(doc.edited_at)}</>
             )}
           </p>
         </article>

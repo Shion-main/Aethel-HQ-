@@ -37,7 +37,8 @@ async function inviteStakeholder(formData: FormData) {
 
   const db = supabaseAdmin();
   const now = new Date();
-  const placeholder = `Untitled session · ${now.toLocaleString("en-US", {
+  const placeholder = `Untitled session · ${now.toLocaleString("en-PH", {
+    timeZone: "Asia/Manila",
     month: "short",
     day: "numeric",
     hour: "numeric",
