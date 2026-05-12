@@ -1,9 +1,12 @@
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { getAgent } from "@/lib/agents/registry";
 import { runSynthesisForProject } from "@/lib/agents/synthesis";
+import { extractProjectMetadata } from "@/lib/agents/project-extractor";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
+
+const PLACEHOLDER_NAME_PREFIX = "Untitled session";
 
 export async function POST(
   req: Request,
@@ -30,7 +33,9 @@ export async function POST(
 
   const { data: stakeholder, error: stErr } = await db
     .from("stakeholders")
-    .select("id, project_id, conversation_ended_at")
+    .select(
+      "id, name, role, company, intake_data, project_id, conversation_ended_at"
+    )
     .eq("token", token)
     .eq("agent_id", agent.id)
     .single();
@@ -39,7 +44,6 @@ export async function POST(
     return Response.json({ error: "Invalid interview link" }, { status: 404 });
   }
 
-  // Idempotent: if already ended, return success without re-triggering synthesis
   if (stakeholder.conversation_ended_at) {
     return Response.json({ ok: true, alreadyEnded: true });
   }
@@ -56,6 +60,52 @@ export async function POST(
 
   if (upErr) {
     return Response.json({ error: upErr.message }, { status: 500 });
+  }
+
+  // Extract project name + context from the transcript IF the project still
+  // has its placeholder name. This runs synchronously so the BRD synthesis
+  // below sees the freshly-renamed project.
+  try {
+    const { data: project } = await db
+      .from("projects")
+      .select("id, name")
+      .eq("id", stakeholder.project_id)
+      .single();
+
+    if (project?.name?.startsWith(PLACEHOLDER_NAME_PREFIX)) {
+      const { data: msgs } = await db
+        .from("messages")
+        .select("role, content, created_at")
+        .eq("stakeholder_id", stakeholder.id)
+        .in("role", ["user", "assistant"])
+        .order("created_at", { ascending: true })
+        .limit(40);
+
+      const intake = (stakeholder.intake_data as Record<string, string>) || {};
+      const extracted = await extractProjectMetadata({
+        model: agent.model,
+        stakeholder: {
+          name: intake.name || stakeholder.name,
+          role: intake.role || stakeholder.role,
+          company: stakeholder.company || intake.company || null,
+        },
+        messages:
+          (msgs || []).map((m) => ({
+            role: m.role as "user" | "assistant",
+            content: m.content,
+          })) || [],
+      });
+
+      if (extracted) {
+        await db
+          .from("projects")
+          .update({ name: extracted.name, context: extracted.context })
+          .eq("id", project.id);
+      }
+    }
+  } catch (err) {
+    console.error("[end] project metadata extraction failed", err);
+    // Non-fatal: synthesis still runs with the placeholder name.
   }
 
   // Fire-and-forget synthesis. Vercel Fluid Compute keeps the lambda alive
