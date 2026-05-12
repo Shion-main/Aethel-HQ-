@@ -1,4 +1,4 @@
-import { google } from "@ai-sdk/google";
+import { groq } from "@ai-sdk/groq";
 import { streamText, type CoreMessage } from "ai";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { buildInterviewerPrompt } from "@/lib/agents/business-analyst/prompts";
@@ -76,7 +76,7 @@ export async function POST(req: Request) {
 
   try {
     const result = await streamText({
-      model: google("gemini-2.5-flash"),
+      model: groq("llama-3.3-70b-versatile"),
       system: systemPrompt,
       messages: coreMessages,
       temperature: 0.7,
@@ -97,7 +97,7 @@ export async function POST(req: Request) {
     });
     return result.toDataStreamResponse();
   } catch (err) {
-    console.error("[chat] Gemini error", err);
+    console.error("[chat] Groq error", err);
     return Response.json(
       { error: "The interviewer is temporarily unavailable. Please try again in a moment." },
       { status: 503 }

@@ -1,4 +1,4 @@
-import { google } from "@ai-sdk/google";
+import { groq } from "@ai-sdk/groq";
 import { generateText } from "ai";
 import { requireAdmin } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
@@ -9,7 +9,7 @@ import { parseSuggestions } from "@/lib/agents/business-analyst/parse-suggestion
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
-const MODEL_ID = "gemini-2.5-flash";
+const MODEL_ID = "llama-3.3-70b-versatile";
 
 export async function POST(req: Request) {
   requireAdmin();
@@ -78,7 +78,7 @@ export async function POST(req: Request) {
 
   try {
     const { text } = await generateText({
-      model: google(MODEL_ID),
+      model: groq(MODEL_ID),
       system: SYNTHESIZER_SYSTEM_PROMPT,
       prompt: userPrompt,
       temperature: 0.4,
@@ -100,7 +100,7 @@ export async function POST(req: Request) {
 
     return Response.json({ brd });
   } catch (err) {
-    console.error("[synthesize] Gemini error", err);
+    console.error("[synthesize] Groq error", err);
     return Response.json(
       { error: "BRD generation failed. Please try again." },
       { status: 503 }
