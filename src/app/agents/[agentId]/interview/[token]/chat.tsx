@@ -48,6 +48,15 @@ export function InterviewChat({
     });
   }, [messages, isLoading]);
 
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const MAX_COMPOSER_HEIGHT = 200;
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, MAX_COMPOSER_HEIGHT)}px`;
+  }, [input]);
+
   const completedNow = isCompleted || locallyEnded;
 
   const lastAssistantId = [...messages]
@@ -216,7 +225,7 @@ export function InterviewChat({
       {!completedNow && (
         <form
           onSubmit={onSubmit}
-          className="border-t dark:border-zinc-800 bg-white dark:bg-zinc-950"
+          className="shrink-0 border-t dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 backdrop-blur"
         >
           <div className="max-w-3xl mx-auto px-6 py-3 space-y-2">
             {selectedChips.length > 0 && (
@@ -240,17 +249,28 @@ export function InterviewChat({
                 ))}
               </div>
             )}
-            <div className="flex gap-2">
-              <input
+            <div className="flex gap-2 items-end">
+              <textarea
+                ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    if (canSend) {
+                      onSubmit(e as unknown as React.FormEvent);
+                    }
+                  }
+                }}
                 placeholder={
                   selectedChips.length > 0
                     ? "Add more in your own words (optional)…"
-                    : "Type your answer…"
+                    : "Type your answer… (Shift+Enter for newline)"
                 }
                 disabled={isLoading}
-                className="flex-1 border rounded-md px-3 py-2 bg-white dark:bg-zinc-900 dark:border-zinc-800 disabled:opacity-50"
+                rows={1}
+                style={{ maxHeight: MAX_COMPOSER_HEIGHT }}
+                className="flex-1 border rounded-md px-3 py-2 bg-white dark:bg-zinc-900 dark:border-zinc-800 disabled:opacity-50 resize-none overflow-y-auto leading-relaxed"
               />
               <button
                 type="submit"
