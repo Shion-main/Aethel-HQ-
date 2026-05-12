@@ -1,4 +1,4 @@
-import { groq } from "@ai-sdk/groq";
+import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import type { AgentConfig } from "./types";
 
@@ -108,7 +108,7 @@ ${brdSummary}
 Draft the email now. Output ONLY the JSON object.`;
 
   const { text } = await generateText({
-    model: groq(agent.model),
+    model: google(agent.model),
     system: SYSTEM_PROMPT,
     prompt: userPrompt,
     temperature: 0.6,

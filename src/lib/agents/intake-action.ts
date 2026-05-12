@@ -1,6 +1,6 @@
 "use server";
 
-import { groq } from "@ai-sdk/groq";
+import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -103,7 +103,7 @@ export async function submitIntakeAction(
       });
 
       const { text: greeting } = await generateText({
-        model: groq(agent.model),
+        model: google(agent.model),
         system: systemPrompt,
         prompt: "Begin the conversation now with your opening greeting.",
         temperature: 0.7,

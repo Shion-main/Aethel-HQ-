@@ -12,7 +12,7 @@ export const businessAnalystConfig: ConversationalAgent = {
   shortDescription: "Stakeholder interviews → BRD drafts",
   kind: "conversational",
 
-  model: "llama-3.3-70b-versatile",
+  model: "gemini-2.5-flash",
 
   intakeSchema: [
     { key: "name",    label: "Your name",              type: "text",  required: true,  maxLength: 120 },

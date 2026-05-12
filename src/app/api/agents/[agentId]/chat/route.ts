@@ -1,4 +1,4 @@
-import { groq } from "@ai-sdk/groq";
+import { google } from "@ai-sdk/google";
 import { streamText, type CoreMessage } from "ai";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { getConversationalAgent } from "@/lib/agents/registry";
@@ -90,7 +90,7 @@ export async function POST(
 
   try {
     const result = await streamText({
-      model: groq(agent.model),
+      model: google(agent.model),
       system: systemPrompt,
       messages: coreMessages,
       temperature: 0.7,
@@ -104,7 +104,7 @@ export async function POST(
     });
     return result.toDataStreamResponse();
   } catch (err) {
-    console.error("[chat] Groq error", err);
+    console.error("[chat] LLM error", err);
     return Response.json(
       { error: "The interviewer is temporarily unavailable. Please try again in a moment." },
       { status: 503 }

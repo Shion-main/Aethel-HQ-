@@ -1,4 +1,4 @@
-import { groq } from "@ai-sdk/groq";
+import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { getConversationalAgent } from "./registry";
@@ -75,7 +75,7 @@ export async function runSynthesisForProject(
     const userPrompt = agent.buildSynthesizerUserPrompt(ctx);
 
     const { text } = await generateText({
-      model: groq(agent.model),
+      model: google(agent.model),
       system: agent.synthesizerSystemPrompt,
       prompt: userPrompt,
       temperature: 0.4,

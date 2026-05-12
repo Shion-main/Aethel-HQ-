@@ -7,7 +7,7 @@ export const sowWriterConfig: GenerativeAgent = {
   shortDescription: "Turns a BRD into a Statement of Work",
   kind: "generative",
 
-  model: "llama-3.3-70b-versatile",
+  model: "gemini-2.5-flash",
 
   document: {
     kind: "sow",

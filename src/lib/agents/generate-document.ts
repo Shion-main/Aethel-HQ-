@@ -1,4 +1,4 @@
-import { groq } from "@ai-sdk/groq";
+import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { getAgent } from "./registry";
@@ -118,7 +118,7 @@ export async function runGenerativeForProject(
     const userPrompt = generativeAgent.buildUserPrompt(ctx);
 
     const { text } = await generateText({
-      model: groq(generativeAgent.model),
+      model: google(generativeAgent.model),
       system: generativeAgent.systemPrompt,
       prompt: userPrompt,
       temperature: 0.4,

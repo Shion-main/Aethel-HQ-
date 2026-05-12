@@ -1,4 +1,4 @@
-import { groq } from "@ai-sdk/groq";
+import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import { stripCompletionToken } from "@/lib/agents/business-analyst/types";
 import { parseSuggestions } from "@/lib/agents/business-analyst/parse-suggestions";
@@ -79,14 +79,14 @@ Output the JSON now.`;
 
   try {
     const { text } = await generateText({
-      model: groq(input.model),
+      model: google(input.model),
       system: SYSTEM,
       prompt: userPrompt,
       temperature: 0.2,
     });
     return extractJson(text);
   } catch (err) {
-    console.error("[project-extractor] Groq error", err);
+    console.error("[project-extractor] LLM error", err);
     return null;
   }
 }
