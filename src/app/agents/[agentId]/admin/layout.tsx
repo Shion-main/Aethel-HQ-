@@ -1,9 +1,19 @@
 import Link from "next/link";
+import { redirect, notFound } from "next/navigation";
 import { requireAdmin, clearAdminCookie } from "@/lib/auth";
-import { redirect } from "next/navigation";
+import { getAgent } from "@/lib/agents/registry";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function AdminLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: { agentId: string };
+}) {
   requireAdmin();
+
+  const agent = getAgent(params.agentId);
+  if (!agent) notFound();
 
   async function logout() {
     "use server";
@@ -20,8 +30,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               Aethel HQ
             </Link>
             <span className="text-zinc-300 dark:text-zinc-700">/</span>
-            <Link href="/agents/business-analyst/admin" className="text-sm font-medium">
-              Business Analyst
+            <Link href={`/agents/${agent.id}/admin`} className="text-sm font-medium">
+              {agent.name}
             </Link>
           </div>
           <form action={logout}>

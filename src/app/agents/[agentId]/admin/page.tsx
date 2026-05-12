@@ -1,30 +1,41 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { getAgent } from "@/lib/agents/registry";
 import type { Project } from "@/lib/agents/business-analyst/types";
 
 async function createProject(formData: FormData) {
   "use server";
+  const agentId = String(formData.get("agentId") || "");
   const name = String(formData.get("name") || "").trim();
   const context = String(formData.get("context") || "").trim();
+  if (!agentId || !getAgent(agentId)) throw new Error("Unknown agent");
   if (!name) return;
   const db = supabaseAdmin();
   const { data, error } = await db
     .from("projects")
-    .insert({ name, context: context || null })
+    .insert({ name, context: context || null, agent_id: agentId })
     .select("id")
     .single();
   if (error || !data) throw new Error(error?.message || "Failed to create project");
-  revalidatePath("/agents/business-analyst/admin");
-  redirect(`/agents/business-analyst/admin/${data.id}`);
+  revalidatePath(`/agents/${agentId}/admin`);
+  redirect(`/agents/${agentId}/admin/${data.id}`);
 }
 
-export default async function AdminHome() {
+export default async function AdminHome({
+  params,
+}: {
+  params: { agentId: string };
+}) {
+  const agent = getAgent(params.agentId);
+  if (!agent) notFound();
+
   const db = supabaseAdmin();
   const { data: projects } = await db
     .from("projects")
     .select("*")
+    .eq("agent_id", agent.id)
     .order("created_at", { ascending: false });
 
   return (
@@ -32,6 +43,7 @@ export default async function AdminHome() {
       <section>
         <h2 className="text-lg font-semibold mb-3">New project</h2>
         <form action={createProject} className="space-y-3 border rounded-lg p-4 bg-white dark:bg-zinc-900 dark:border-zinc-800">
+          <input type="hidden" name="agentId" value={agent.id} />
           <input
             name="name"
             required
@@ -59,7 +71,7 @@ export default async function AdminHome() {
             {(projects as Project[]).map((p) => (
               <li key={p.id}>
                 <Link
-                  href={`/agents/business-analyst/admin/${p.id}`}
+                  href={`/agents/${agent.id}/admin/${p.id}`}
                   className="flex items-center justify-between p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
                 >
                   <div>

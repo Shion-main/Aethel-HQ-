@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { getAgent } from "@/lib/agents/registry";
 import { stripCompletionToken } from "@/lib/agents/business-analyst/types";
 import { InterviewChat } from "./chat";
 
@@ -8,13 +9,17 @@ export const dynamic = "force-dynamic";
 export default async function InterviewPage({
   params,
 }: {
-  params: { token: string };
+  params: { agentId: string; token: string };
 }) {
+  const agent = getAgent(params.agentId);
+  if (!agent) notFound();
+
   const db = supabaseAdmin();
   const { data: stakeholder } = await db
     .from("stakeholders")
     .select("*, projects(name, context)")
     .eq("token", params.token)
+    .eq("agent_id", agent.id)
     .single();
 
   if (!stakeholder) notFound();
@@ -34,6 +39,7 @@ export default async function InterviewPage({
 
   return (
     <InterviewChat
+      agentId={agent.id}
       token={params.token}
       stakeholderName={stakeholder.name}
       projectName={

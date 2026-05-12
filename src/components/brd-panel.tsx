@@ -5,13 +5,14 @@ import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 
 type Props = {
+  agentId: string;
   projectId: string;
   initialBrd: { id: string; content: string; created_at: string } | null;
   canGenerate: boolean;
   completedCount: number;
 };
 
-export function BrdPanel({ projectId, initialBrd, canGenerate, completedCount }: Props) {
+export function BrdPanel({ agentId, projectId, initialBrd, canGenerate, completedCount }: Props) {
   const router = useRouter();
   const [brd, setBrd] = useState(initialBrd);
   const [loading, setLoading] = useState(false);
@@ -22,7 +23,7 @@ export function BrdPanel({ projectId, initialBrd, canGenerate, completedCount }:
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/agents/business-analyst/synthesize", {
+      const res = await fetch(`/api/agents/${agentId}/synthesize`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ projectId }),

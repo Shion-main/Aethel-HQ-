@@ -4,25 +4,30 @@ import { notFound } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { nanoid } from "nanoid";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { getAgent } from "@/lib/agents/registry";
 import { CopyLink } from "@/components/copy-link";
 import { BrdPanel } from "@/components/brd-panel";
 import type { Project, Stakeholder, Brd } from "@/lib/agents/business-analyst/types";
 
 async function addStakeholder(formData: FormData) {
   "use server";
+  const agentId = String(formData.get("agentId") || "");
   const projectId = String(formData.get("projectId") || "");
   const name = String(formData.get("name") || "").trim();
   const role = String(formData.get("role") || "").trim();
-  if (!projectId || !name) return;
+  if (!agentId || !getAgent(agentId)) throw new Error("Unknown agent");
+  if (!projectId) return;
   const db = supabaseAdmin();
   const { error } = await db.from("stakeholders").insert({
     project_id: projectId,
-    name,
+    agent_id: agentId,
+    name: name || "Stakeholder",
     role: role || null,
     token: nanoid(21),
+    intake_completed_at: null,
   });
   if (error) throw new Error(error.message);
-  revalidatePath(`/agents/business-analyst/admin/${projectId}`);
+  revalidatePath(`/agents/${agentId}/admin/${projectId}`);
 }
 
 const STATUS_BADGE: Record<Stakeholder["status"], string> = {
@@ -34,13 +39,17 @@ const STATUS_BADGE: Record<Stakeholder["status"], string> = {
 export default async function ProjectDetail({
   params,
 }: {
-  params: { projectId: string };
+  params: { agentId: string; projectId: string };
 }) {
+  const agent = getAgent(params.agentId);
+  if (!agent) notFound();
+
   const db = supabaseAdmin();
   const { data: project } = await db
     .from("projects")
     .select("*")
     .eq("id", params.projectId)
+    .eq("agent_id", agent.id)
     .single();
 
   if (!project) notFound();
@@ -49,6 +58,7 @@ export default async function ProjectDetail({
     .from("stakeholders")
     .select("*")
     .eq("project_id", params.projectId)
+    .eq("agent_id", agent.id)
     .order("created_at", { ascending: true });
 
   const counts: Record<string, number> = {};
@@ -86,7 +96,7 @@ export default async function ProjectDetail({
     <div className="space-y-8">
       <section>
         <Link
-          href="/agents/business-analyst/admin"
+          href={`/agents/${agent.id}/admin`}
           className="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
         >
           ← All projects
@@ -99,20 +109,23 @@ export default async function ProjectDetail({
 
       <section>
         <h2 className="text-lg font-semibold mb-3">Add stakeholder</h2>
+        <p className="text-xs text-zinc-500 mb-2">
+          Name and role are optional pre-fills — the stakeholder will confirm their own contact info on the intake form before chatting.
+        </p>
         <form
           action={addStakeholder}
           className="flex flex-col sm:flex-row gap-2 border rounded-lg p-4 bg-white dark:bg-zinc-900 dark:border-zinc-800"
         >
+          <input type="hidden" name="agentId" value={agent.id} />
           <input type="hidden" name="projectId" value={p.id} />
           <input
             name="name"
-            required
-            placeholder="Name (e.g. Maria)"
+            placeholder="Name (optional pre-fill)"
             className="flex-1 border rounded-md px-3 py-2 bg-white dark:bg-zinc-950 dark:border-zinc-800"
           />
           <input
             name="role"
-            placeholder="Role (e.g. Operations Lead)"
+            placeholder="Role (optional pre-fill)"
             className="flex-1 border rounded-md px-3 py-2 bg-white dark:bg-zinc-950 dark:border-zinc-800"
           />
           <button className="bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900 rounded-md px-4 py-2 text-sm font-medium">
@@ -128,13 +141,13 @@ export default async function ProjectDetail({
         ) : (
           <ul className="border rounded-lg divide-y dark:border-zinc-800 dark:divide-zinc-800 bg-white dark:bg-zinc-900">
             {(stakeholders as Stakeholder[]).map((s) => {
-              const url = `${baseUrl}/agents/business-analyst/interview/${s.token}`;
+              const url = `${baseUrl}/agents/${agent.id}/interview/${s.token}`;
               const msgCount = counts[s.id] || 0;
               return (
                 <li key={s.id} className="p-4 space-y-2">
                   <div className="flex items-center justify-between gap-3">
                     <Link
-                      href={`/agents/business-analyst/admin/${p.id}/stakeholders/${s.id}`}
+                      href={`/agents/${agent.id}/admin/${p.id}/stakeholders/${s.id}`}
                       className="flex-1 hover:opacity-80"
                     >
                       <div className="font-medium">
@@ -164,6 +177,7 @@ export default async function ProjectDetail({
       </section>
 
       <BrdPanel
+        agentId={agent.id}
         projectId={p.id}
         initialBrd={(latestBrd as Brd | null) || null}
         canGenerate={completedCount > 0}

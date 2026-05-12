@@ -1,15 +1,22 @@
 import { groq } from "@ai-sdk/groq";
 import { streamText, type CoreMessage } from "ai";
 import { supabaseAdmin } from "@/lib/supabase/server";
-import { buildInterviewerPrompt } from "@/lib/agents/business-analyst/prompts";
-import { COMPLETION_TOKEN } from "@/lib/agents/business-analyst/types";
+import { getAgent } from "@/lib/agents/registry";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 type IncomingMessage = { role: "user" | "assistant" | "system"; content: string };
 
-export async function POST(req: Request) {
+export async function POST(
+  req: Request,
+  { params }: { params: { agentId: string } }
+) {
+  const agent = getAgent(params.agentId);
+  if (!agent) {
+    return Response.json({ error: "Unknown agent" }, { status: 404 });
+  }
+
   let body: { messages: IncomingMessage[]; token?: string };
   try {
     body = await req.json();
@@ -26,14 +33,17 @@ export async function POST(req: Request) {
 
   const { data: stakeholder, error: stErr } = await db
     .from("stakeholders")
-    .select("id, name, role, status, project_id, projects(name, context)")
+    .select(
+      "id, name, role, status, project_id, intake_data, conversation_ended_at, projects(name, context)"
+    )
     .eq("token", token)
+    .eq("agent_id", agent.id)
     .single();
 
   if (stErr || !stakeholder) {
     return Response.json({ error: "Invalid interview link" }, { status: 404 });
   }
-  if (stakeholder.status === "completed") {
+  if (stakeholder.conversation_ended_at || stakeholder.status === "completed") {
     return Response.json({ error: "Interview already complete" }, { status: 410 });
   }
 
@@ -64,10 +74,14 @@ export async function POST(req: Request) {
       .eq("id", stakeholder.id);
   }
 
-  const systemPrompt = buildInterviewerPrompt({
+  const systemPrompt = agent.buildInterviewerSystemPrompt({
     projectContext: project?.context || "",
-    stakeholderName: stakeholder.name,
-    stakeholderRole: stakeholder.role || "",
+    intake: (stakeholder.intake_data as Record<string, string>) || {},
+    stakeholder: {
+      id: stakeholder.id,
+      name: stakeholder.name,
+      role: stakeholder.role,
+    },
   });
 
   const coreMessages: CoreMessage[] = messages
@@ -76,23 +90,16 @@ export async function POST(req: Request) {
 
   try {
     const result = await streamText({
-      model: groq("llama-3.3-70b-versatile"),
+      model: groq(agent.model),
       system: systemPrompt,
       messages: coreMessages,
       temperature: 0.7,
       onFinish: async ({ text }) => {
-        const isComplete = text.includes(COMPLETION_TOKEN);
         await db.from("messages").insert({
           stakeholder_id: stakeholder.id,
           role: "assistant",
           content: text,
         });
-        if (isComplete) {
-          await db
-            .from("stakeholders")
-            .update({ status: "completed", completed_at: new Date().toISOString() })
-            .eq("id", stakeholder.id);
-        }
       },
     });
     return result.toDataStreamResponse();

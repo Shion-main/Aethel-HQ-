@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { getAgent } from "@/lib/agents/registry";
 import {
   stripCompletionToken,
   type Message,
@@ -11,14 +12,18 @@ import { parseSuggestions } from "@/lib/agents/business-analyst/parse-suggestion
 export default async function TranscriptPage({
   params,
 }: {
-  params: { projectId: string; stakeholderId: string };
+  params: { agentId: string; projectId: string; stakeholderId: string };
 }) {
+  const agent = getAgent(params.agentId);
+  if (!agent) notFound();
+
   const db = supabaseAdmin();
   const { data: stakeholder } = await db
     .from("stakeholders")
     .select("*")
     .eq("id", params.stakeholderId)
     .eq("project_id", params.projectId)
+    .eq("agent_id", agent.id)
     .single();
 
   if (!stakeholder) notFound();
@@ -36,7 +41,7 @@ export default async function TranscriptPage({
     <div className="space-y-6">
       <div>
         <Link
-          href={`/agents/business-analyst/admin/${params.projectId}`}
+          href={`/agents/${agent.id}/admin/${params.projectId}`}
           className="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
         >
           ← Back to project

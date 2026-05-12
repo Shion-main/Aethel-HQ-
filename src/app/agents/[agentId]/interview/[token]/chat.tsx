@@ -14,6 +14,7 @@ import {
 const DEBUG_SUGGESTIONS = false;
 
 type Props = {
+  agentId: string;
   token: string;
   stakeholderName: string;
   projectName: string;
@@ -22,6 +23,7 @@ type Props = {
 };
 
 export function InterviewChat({
+  agentId,
   token,
   stakeholderName,
   projectName,
@@ -29,7 +31,7 @@ export function InterviewChat({
   initialMessages,
 }: Props) {
   const { messages, input, setInput, append, isLoading, error } = useChat({
-    api: "/api/agents/business-analyst/chat",
+    api: `/api/agents/${agentId}/chat`,
     body: { token },
     initialMessages,
   });
