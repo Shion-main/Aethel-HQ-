@@ -32,6 +32,12 @@ export async function POST(
   try {
     const result = await runGenerativeForProject(agent.id, projectId);
     if (!result.ok) {
+      if (result.reason === "already_running") {
+        return Response.json(
+          { error: "This document is already being generated. Please wait." },
+          { status: 409 }
+        );
+      }
       const status =
         result.reason === "project_not_found"
           ? 404
@@ -44,7 +50,7 @@ export async function POST(
     const db = supabaseAdmin();
     const { data: document } = await db
       .from("documents")
-      .select("id, content, created_at, kind, title")
+      .select("id, content, edited_content, edited_at, human_edited, created_at, kind, title")
       .eq("id", result.documentId)
       .single();
 

@@ -3,6 +3,7 @@ import { generateText } from "ai";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { getConversationalAgent } from "./registry";
 import type { SynthesisContext, SynthesisStakeholder } from "./types";
+import { startRun, completeRun, failRun } from "./runs";
 
 export type SynthesisResult =
   | { ok: true; outputId: string }
@@ -61,33 +62,45 @@ export async function runSynthesisForProject(
       [],
   }));
 
-  const ctx: SynthesisContext = {
-    projectId,
-    project: { name: project.name, context: project.context },
-    stakeholders: synthStakeholders,
-  };
+  const run = await startRun(agentId, projectId, "synthesis");
+  if (!run.ok) return { ok: false, reason: run.reason };
 
-  const userPrompt = agent.buildSynthesizerUserPrompt(ctx);
+  try {
+    const ctx: SynthesisContext = {
+      projectId,
+      project: { name: project.name, context: project.context },
+      stakeholders: synthStakeholders,
+    };
 
-  const { text } = await generateText({
-    model: groq(agent.model),
-    system: agent.synthesizerSystemPrompt,
-    prompt: userPrompt,
-    temperature: 0.4,
-  });
+    const userPrompt = agent.buildSynthesizerUserPrompt(ctx);
 
-  const { data: stored, error } = await db
-    .from("documents")
-    .insert({
-      project_id: projectId,
-      agent_id: agentId,
-      kind: agent.synthesis.documentKind,
-      content: text,
-      model: agent.model,
-    })
-    .select("id")
-    .single();
+    const { text } = await generateText({
+      model: groq(agent.model),
+      system: agent.synthesizerSystemPrompt,
+      prompt: userPrompt,
+      temperature: 0.4,
+    });
 
-  if (error || !stored) return { ok: false, reason: error?.message || "insert_failed" };
-  return { ok: true, outputId: stored.id };
+    const { data: stored, error } = await db
+      .from("documents")
+      .insert({
+        project_id: projectId,
+        agent_id: agentId,
+        kind: agent.synthesis.documentKind,
+        content: text,
+        model: agent.model,
+      })
+      .select("id")
+      .single();
+
+    if (error || !stored) {
+      await failRun(run.runId, error?.message || "insert_failed", run.startedAt);
+      return { ok: false, reason: error?.message || "insert_failed" };
+    }
+    await completeRun(run.runId, stored.id, run.startedAt);
+    return { ok: true, outputId: stored.id };
+  } catch (err) {
+    await failRun(run.runId, err instanceof Error ? err.message : String(err), run.startedAt);
+    throw err;
+  }
 }

@@ -86,7 +86,7 @@ export default async function ProjectDetail({
 
   const { data: allDocs } = await db
     .from("documents")
-    .select("id, content, created_at, kind, title")
+    .select("id, content, edited_content, edited_at, human_edited, created_at, kind, title")
     .eq("project_id", params.projectId)
     .order("created_at", { ascending: false });
 
@@ -221,6 +221,7 @@ export default async function ProjectDetail({
       </section>
 
       <DocumentPanel
+        agentId={agent.id}
         documentLabel="Business Requirements Document"
         endpointPath={`/api/agents/${agent.id}/synthesize`}
         projectId={p.id}
@@ -245,6 +246,7 @@ export default async function ProjectDetail({
         return (
           <DocumentPanel
             key={ga.id}
+            agentId={ga.id}
             documentLabel={ga.document.title}
             endpointPath={`/api/agents/${ga.id}/generate`}
             projectId={p.id}

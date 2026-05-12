@@ -72,7 +72,7 @@ export async function POST(
 
   const { data: latestBrd } = await db
     .from("documents")
-    .select("content")
+    .select("content, edited_content")
     .eq("project_id", stakeholder.project_id)
     .eq("kind", agent.synthesis.documentKind)
     .order("created_at", { ascending: false })
@@ -94,7 +94,10 @@ export async function POST(
       },
       projectName: project?.name || "this project",
       projectContext: project?.context || null,
-      latestBrdContent: (latestBrd?.content as string) || null,
+      latestBrdContent:
+        (latestBrd?.edited_content as string | null) ??
+        (latestBrd?.content as string | null) ??
+        null,
     });
 
     return Response.json({ draft });

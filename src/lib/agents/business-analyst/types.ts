@@ -32,6 +32,9 @@ export type Document = {
   kind: string;
   title: string | null;
   content: string;
+  edited_content: string | null;
+  edited_at: string | null;
+  human_edited: boolean;
   model: string;
   created_at: string;
 };

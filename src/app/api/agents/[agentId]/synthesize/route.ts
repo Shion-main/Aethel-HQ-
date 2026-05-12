@@ -31,6 +31,12 @@ export async function POST(
   try {
     const result = await runSynthesisForProject(agent.id, projectId);
     if (!result.ok) {
+      if (result.reason === "already_running") {
+        return Response.json(
+          { error: "A BRD is already being generated for this project. Please wait." },
+          { status: 409 }
+        );
+      }
       const status =
         result.reason === "no_stakeholders"
           ? 400
@@ -43,7 +49,7 @@ export async function POST(
     const db = supabaseAdmin();
     const { data: document } = await db
       .from("documents")
-      .select("id, content, created_at, kind, title")
+      .select("id, content, edited_content, edited_at, human_edited, created_at, kind, title")
       .eq("id", result.outputId)
       .single();
 
